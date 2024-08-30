@@ -1,9 +1,4 @@
-./Pipfile
-./Pipfile.lock
-./test.py
-./.idea/
-./__pychache__/
-./output/
+/__pychache__/
 /.chainlit/
 /.files/
 /chroma/
@@ -18,3 +13,5 @@
 /.idea/misc.xml
 /.idea/modules.xml
 /.idea/vcs.xml
+/chainlit.md
+/test.py
