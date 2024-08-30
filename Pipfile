@@ -1,0 +1,17 @@
+[[source]]
+url = "https://repo.huaweicloud.com/repository/pypi/simple"
+verify_ssl = true
+name = "pip_conf_index_global"
+
+[packages]
+chainlit = "*"
+ollama = "*"
+unstructured = "*"
+whisper = "*"
+chromadb = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
+python_full_version = "3.10.6"
