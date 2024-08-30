@@ -157,7 +157,7 @@ async def start():
             TextInput(
                 id="GraphRAG Input",
                 label="GraphRAG Database",
-                initial='./RAG_Test/output/20240815-133108/artifacts'
+                initial='./GraphRAG_database'
             ),
             TextInput(
                 id="ChromaDB Root",
