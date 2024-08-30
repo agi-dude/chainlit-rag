@@ -1,6 +1,6 @@
-chainlit~=1.1.400
+chainlit
 ollama~=0.3.1
-graphrag~=0.1.1
+graphrag
 chromadb~=0.5.5
 unstructured~=0.15.0
 torch~=2.3.1
