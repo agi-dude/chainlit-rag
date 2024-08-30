@@ -1,0 +1,11 @@
+./RAG_Test/
+./lancedb/
+./chroma/
+./.chainlit/
+./.files/
+./Pipfile/
+./Pipfile.lock/
+./test.py/
+./.idea/
+./__pychache__/
+./output/
