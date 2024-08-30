@@ -66,10 +66,10 @@ def research_query(query, CHROMA_PATH, COLLECTION_NAME, OLLAMA_HOST, MODEL, GRAP
 
 @cl.on_message
 async def main(message: cl.Message):
-    settings = cl.user_session.get("settings")
+    settings = cl.user_session.get("chat_settings")
 
     if len(message.elements) < 1:
-        client = ollama.Client(host=settings['Ollama Host'])
+        client = ollama.Client(host=settings['OpenAI Host'])
         do_research = client.chat(model=settings['Chat Model'], messages=[
             {'role': 'user', 'content': prompts.research_selector.format(message.content)}
         ])['message']['content']
@@ -131,6 +131,19 @@ async def main(message: cl.Message):
 
 @cl.on_chat_start
 async def start():
+    print('''
+    ░▒▓███████▓▒░ ░▒▓██████▓▒░ ░▒▓██████▓▒░  
+    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
+    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░        
+    ░▒▓███████▓▒░░▒▓████████▓▒░▒▓█▓▒▒▓███▓▒░ 
+    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
+    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
+    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░  
+
+
+    Started! Running on:
+        - http://localhost:8000''')
+
     settings = await cl.ChatSettings(
         [
             Select(
@@ -145,24 +158,24 @@ async def start():
                 initial='dolphin-mistral'
             ),
             TextInput(
-                id="Ollama Host",
-                label='Ollama Host',
-                initial='http://192.168.10.102:11434'
+                id="OpenAI Host",
+                label='OpenAI Host',
+                initial='http://localhost:11434'
             ),
             TextInput(
                 id="GraphRAG Root",
                 label="GraphRAG Root Directory",
-                initial="./RAG_Test"
+                initial="."
             ),
             TextInput(
                 id="GraphRAG Input",
                 label="GraphRAG Database",
-                initial='./GraphRAG_database'
+                initial='./output/artifacts'
             ),
             TextInput(
                 id="ChromaDB Root",
                 label="ChromaDB Root Directory",
-                initial="./chroma"
+                initial="./.chroma"
             ),
             TextInput(
                 id="ChromaDB Collection",
