@@ -1,6 +1,6 @@
 chainlit
 ollama~=0.3.1
-graphrag
+graphrag~=0.3.2
 chromadb~=0.5.5
 unstructured~=0.15.0
 torch~=2.3.1
@@ -9,3 +9,5 @@ lmdeploy~=0.5.3
 pillow~=10.4.0
 transformers~=4.42.4
 openai~=1.36.0
+marker-pdf
+jmespath
