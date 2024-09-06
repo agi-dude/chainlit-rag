@@ -79,7 +79,7 @@ embeddings:
 ```
 
 ### Setup database
-1. Place your pdf files into `input/markdown`
+1. Create the path  `input/pdfs` in the root folder of this project and place your pdf files into it.
 2. Run the `loader.py`
 ```bash
 $ python loader.py -c -n # This might take some time (~1 hour or more for large datasets), because it has to index everything, so be patient!
