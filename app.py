@@ -1,9 +1,10 @@
-import os
 from graphrag.query.cli import run_global_search, run_local_search
 
 from chainlit.input_widget import Select, TextInput
 import chainlit as cl
-import ollama
+
+import llm
+from llm import Client
 import chromadb
 from lmdeploy import pipeline, TurbomindEngineConfig
 from lmdeploy.vl import load_image
@@ -14,7 +15,7 @@ from transformers import AutoModel, AutoTokenizer
 import prompts
 
 
-def chroma(query, CHROMA_PATH, COLLECTION_NAME, OLLAMA_HOST, MODEL):
+def chroma(query, CHROMA_PATH, COLLECTION_NAME, CLIENT):
     print('RUNNING CHROMDB QUERY...')
     persistentClient = chromadb.PersistentClient(CHROMA_PATH, settings=chromadb.Settings(anonymized_telemetry=False))
     collection = persistentClient.get_collection(COLLECTION_NAME)
@@ -23,12 +24,12 @@ def chroma(query, CHROMA_PATH, COLLECTION_NAME, OLLAMA_HOST, MODEL):
         n_results=5  # how many results to return
     )
 
-    client = ollama.Client(host=OLLAMA_HOST)
-    response = client.chat(model=MODEL, messages=[
+    client = CLIENT
+    response = client.chat(messages=[
         {'role': 'user', 'content': 'Summarize these documents, and extract all the important information: {}'.format(str(results['documents']))}
     ])
 
-    return response['message']['content']
+    return response
 
 
 def graph_rag(query, GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT):
@@ -42,9 +43,9 @@ def graph_rag(query, GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT):
     return "", global_results
 
 
-def summerize(query, agent1, agent2, agent3, OLLAMA_HOST, MODEL):
-    client = ollama.Client(host=OLLAMA_HOST)
-    response = client.chat(model=MODEL, messages=[
+def summerize(query, agent1, agent2, agent3, CLIENT):
+    client = CLIENT
+    response = client.chat(messages=[
         {'role': 'user', 'content': prompts.summerize_prompt.format(
             query=query,
             output1=agent1,
@@ -53,32 +54,31 @@ def summerize(query, agent1, agent2, agent3, OLLAMA_HOST, MODEL):
         )}
     ])
 
-    return response['message']['content']
+    return response
 
 
-def research_query(query, CHROMA_PATH, COLLECTION_NAME, OLLAMA_HOST, MODEL, GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT):
+def research_query(query, CHROMA_PATH, COLLECTION_NAME, CLIENT, GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT):
     local_results, global_results = graph_rag(query, GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT)
-    chroma_results = chroma(query, CHROMA_PATH, COLLECTION_NAME, OLLAMA_HOST, MODEL)
+    chroma_results = chroma(query, CHROMA_PATH, COLLECTION_NAME, CLIENT)
 
     print('SUMMARIZING...')
-    return summerize(query, local_results, global_results, chroma_results, OLLAMA_HOST, MODEL)
+    return summerize(query, local_results, global_results, chroma_results, CLIENT)
 
 
 @cl.on_message
 async def main(message: cl.Message):
     settings = cl.user_session.get("chat_settings")
+    CLIENT = llm.Client(settings['Provider'], settings["API"], settings["Chat Model"], settings["OpenAI Host"])
 
     if len(message.elements) < 1:
-        client = ollama.Client(host=settings['OpenAI Host'])
-        do_research = client.chat(model=settings['Chat Model'], messages=[
+        do_research = CLIENT.chat(messages=[
             {'role': 'user', 'content': prompts.research_selector.format(message.content)}
-        ])['message']['content']
+        ])
 
         if 'RESEARCH' in do_research:
             print('RESEARCHING...')
             research = research_query(message.content, settings['ChromaDB Root'],
-                                      settings['ChromaDB Collection'], settings['Ollama Host'],
-                                      settings['Chat Model'], settings['GraphRAG Root'],
+                                      settings['ChromaDB Collection'], CLIENT, settings['GraphRAG Root'],
                                       settings['GraphRAG Input']
             )
 
@@ -90,7 +90,7 @@ async def main(message: cl.Message):
 
         else:
             print('RESPONDING...')
-            response = client.chat(model=settings['Chat Model'], messages=cl.chat_context.to_openai())
+            response = CLIENT.chat(messages=cl.chat_context.to_openai())
 
             await cl.Message(
                 content=response['message']['content'],
@@ -132,13 +132,13 @@ async def main(message: cl.Message):
 @cl.on_chat_start
 async def start():
     print('''
-    ░▒▓███████▓▒░ ░▒▓██████▓▒░ ░▒▓██████▓▒░  
-    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
-    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░        
-    ░▒▓███████▓▒░░▒▓████████▓▒░▒▓█▓▒▒▓███▓▒░ 
-    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
-    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
-    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░  
+    ░▒▓███████▓▒░ ░▒▓██████▓▒░ ░▒▓██████▓▒░
+    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░
+    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+    ░▒▓███████▓▒░░▒▓████████▓▒░▒▓█▓▒▒▓███▓▒░
+    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░
+    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░
+    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░
 
 
     Started! Running on:
@@ -153,6 +153,11 @@ async def start():
                 initial_index=0,
             ),
             TextInput(
+                id="Provider",
+                label='LLM Provider (openai, anthropic, azure, ollama)',
+                initial='openai'
+            ),
+            TextInput(
                 id="Chat Model",
                 label="Ollama Model",
                 initial='dolphin-mistral'
@@ -161,6 +166,11 @@ async def start():
                 id="OpenAI Host",
                 label='OpenAI Host',
                 initial='http://localhost:11434'
+            ),
+            TextInput(
+                id="API",
+                label='API Key',
+                initial='sk-0000000000'
             ),
             TextInput(
                 id="GraphRAG Root",

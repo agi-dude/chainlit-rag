@@ -9,6 +9,7 @@ ollama = "*"
 unstructured = "*"
 whisper = "*"
 chromadb = "*"
+anthropic = "*"
 
 [dev-packages]
 
