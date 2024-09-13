@@ -14,3 +14,5 @@
 /.idea/vcs.xml
 /chainlit.md
 /test.py
+/input/markdown/*
+/input/pdfs/*
