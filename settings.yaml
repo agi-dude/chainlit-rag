@@ -7,7 +7,7 @@ llm:
   model_supports_json: false # recommended if this is available for your model.
   max_tokens: 1024
   request_timeout: 1000.0
-  api_base: http://192.168.10.102:11434/v1
+  api_base: http://localhost:11434/v1
   # api_version: 2024-02-15-preview
   # organization: <organization_id>
   # deployment_name: <azure_model_deployment_name>
