@@ -3,7 +3,8 @@ from graphrag.query.cli import run_global_search, run_local_search
 from chainlit.input_widget import Select, TextInput
 import chainlit as cl
 
-import llm
+import os
+import json
 from llm import Client
 import chromadb
 from lmdeploy import pipeline, TurbomindEngineConfig
@@ -37,7 +38,7 @@ def graph_rag(query, GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT):
     global_results = run_global_search(GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT,
                                        query=query, response_type="One page report", community_level=2)
 
-    #local_results = run_local_search(GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT,
+    # local_results = run_local_search(GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT,
     #                                 query=query, response_type="One page report", community_level=2)
 
     return "", global_results
@@ -68,7 +69,7 @@ def research_query(query, CHROMA_PATH, COLLECTION_NAME, CLIENT, GRAPHRAG_INDEX_L
 @cl.on_message
 async def main(message: cl.Message):
     settings = cl.user_session.get("chat_settings")
-    CLIENT = llm.Client(settings['Provider'], settings["API"], settings["Chat Model"], settings["OpenAI Host"])
+    CLIENT = Client(settings['Provider'], settings["API"], settings["Chat Model"], settings["OpenAI Host"])
 
     if len(message.elements) < 1:
         do_research = CLIENT.chat(messages=[
@@ -134,53 +135,61 @@ async def main(message: cl.Message):
 @cl.on_chat_start
 async def start():
     print("    - \u001b[35mNew session started!\u001b[0m")
+
+    if os.path.isfile('settings.json'):
+        with open('settings.json') as settings_file:
+            default_settings = json.load(settings_file)
+
+    else:
+        default_settings = {"Vision Model": "InternVL2", "Provider": "openai", "Chat Model": "dolphin-mistral", "OpenAI Host": "http://localhost:11434", "API": "sk-0000000000", "GraphRAG Root": ".", "GraphRAG Input": "./output/artifacts", "ChromaDB Root": "./.chroma", "ChromaDB Collection": "collection1"}
+
     settings = await cl.ChatSettings(
         [
             Select(
                 id="Vision Model",
                 label="Vision Model",
                 values=["InternVL2", "Mini-CPM"],
-                initial_index=0,
+                initial_index=["InternVL2", "Mini-CPM"].index(default_settings['Vision Model']),
             ),
             TextInput(
                 id="Provider",
                 label='LLM Provider (openai, anthropic, azure, ollama)',
-                initial='openai'
+                initial=default_settings["Provider"]
             ),
             TextInput(
                 id="Chat Model",
                 label="Chat Model",
-                initial='dolphin-mistral'
+                initial=default_settings["Chat Model"]
             ),
             TextInput(
                 id="OpenAI Host",
                 label='API Base',
-                initial='http://localhost:11434'
+                initial=default_settings["OpenAI Host"]
             ),
             TextInput(
                 id="API",
                 label='API Key',
-                initial='sk-0000000000'
+                initial=default_settings["API"]
             ),
             TextInput(
                 id="GraphRAG Root",
                 label="GraphRAG Root Directory",
-                initial="."
+                initial=default_settings["GraphRAG Root"]
             ),
             TextInput(
                 id="GraphRAG Input",
                 label="GraphRAG Database",
-                initial='./output/artifacts'
+                initial=default_settings["GraphRAG Input"]
             ),
             TextInput(
                 id="ChromaDB Root",
                 label="ChromaDB Root Directory",
-                initial="./.chroma"
+                initial=default_settings["ChromaDB Root"]
             ),
             TextInput(
                 id="ChromaDB Collection",
                 label="ChromaDB collection name",
-                initial='collection1'
+                initial=default_settings["ChromaDB Collection"]
             )
         ]
     ).send()
@@ -202,6 +211,8 @@ Started!\n\n''')
 @cl.on_settings_update
 async def setup_agent(settings):
     print('    - Settings updated!')
+    with open('settings.json', 'w') as settings_file:
+        settings_file.write(json.dumps(settings))
 
 
 if __name__ == "__main__":
