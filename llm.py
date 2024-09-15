@@ -16,7 +16,7 @@ class Client:
 
     def initialize_client(self):
         if self.provider == 'openai':
-            self.client = openai.Client(api_key=self.api_key, base_url='https://api.openai.com/v1')
+            self.client = openai.Client(api_key=self.api_key, base_url=self.host)
 
         elif self.provider == 'anthropic':
             self.client = anthropic.Client(api_key=self.api_key)
@@ -29,8 +29,11 @@ class Client:
 
     def chat(self, messages):
         if self.provider == 'openai':
-            response = self.client.chat(model=self.model, messages=messages)
-            return response['message']['content']
+            response = self.client.chat.completions.create(
+                messages=messages,
+                model=self.model,
+            )
+            return response.choices[0].message.content
 
         elif self.provider == 'anthropic':
             message = self.client.messages.create(

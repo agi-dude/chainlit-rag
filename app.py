@@ -16,7 +16,7 @@ import prompts
 
 
 def chroma(query, CHROMA_PATH, COLLECTION_NAME, CLIENT):
-    print('RUNNING CHROMDB QUERY...')
+    print('    - Querying ChromaDB')
     persistentClient = chromadb.PersistentClient(CHROMA_PATH, settings=chromadb.Settings(anonymized_telemetry=False))
     collection = persistentClient.get_collection(COLLECTION_NAME)
     results = collection.query(
@@ -33,7 +33,7 @@ def chroma(query, CHROMA_PATH, COLLECTION_NAME, CLIENT):
 
 
 def graph_rag(query, GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT):
-    print('RUNNING GRAPHRAG QUERY...')
+    print('    - Querying GraphRAG')
     global_results = run_global_search(GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT,
                                        query=query, response_type="One page report", community_level=2)
 
@@ -61,7 +61,7 @@ def research_query(query, CHROMA_PATH, COLLECTION_NAME, CLIENT, GRAPHRAG_INDEX_L
     local_results, global_results = graph_rag(query, GRAPHRAG_INDEX_LOCATION, GRAPHRAG_ROOT)
     chroma_results = chroma(query, CHROMA_PATH, COLLECTION_NAME, CLIENT)
 
-    print('SUMMARIZING...')
+    print('    - Generating final response...')
     return summerize(query, local_results, global_results, chroma_results, CLIENT)
 
 
@@ -76,28 +76,29 @@ async def main(message: cl.Message):
         ])
 
         if 'RESEARCH' in do_research:
-            print('RESEARCHING...')
+            print('    - Starting research...')
             research = research_query(message.content, settings['ChromaDB Root'],
                                       settings['ChromaDB Collection'], CLIENT, settings['GraphRAG Root'],
                                       settings['GraphRAG Input']
             )
 
-            print('SENDING MESSAGE...')
+            print('    - Sending...')
 
             await cl.Message(
                 content=research
             ).send()
 
         else:
-            print('RESPONDING...')
+            print('    - Responding (No research)')
             response = CLIENT.chat(messages=cl.chat_context.to_openai())
 
             await cl.Message(
-                content=response['message']['content'],
+                content=response,
             ).send()
 
     else:
         if settings['Vision Model'] == 'InternVL2':
+            print('    - Starting InternVL2')
             image = load_image(message.elements[0].path)
             backend_config = TurbomindEngineConfig(model_format='awq')
             pipe = pipeline('OpenGVLab/InternVL2-Llama3-76B-AWQ', backend_config=backend_config, log_level='INFO')
@@ -105,6 +106,7 @@ async def main(message: cl.Message):
             await cl.Message(content=response.text).send()
 
         elif settings['Vision Model'] == 'Mini-CPM':
+            print('    - Starting Mini-CPM')
             model = AutoModel.from_pretrained('openbmb/MiniCPM-Llama3-V-2_5', trust_remote_code=True, torch_dtype=torch.int8)
             model = model.to(device='cuda')
 
@@ -131,19 +133,7 @@ async def main(message: cl.Message):
 
 @cl.on_chat_start
 async def start():
-    print('''
-    ░▒▓███████▓▒░ ░▒▓██████▓▒░ ░▒▓██████▓▒░
-    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░
-    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
-    ░▒▓███████▓▒░░▒▓████████▓▒░▒▓█▓▒▒▓███▓▒░
-    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░
-    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░
-    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░
-
-
-    Started! Running on:
-        - http://localhost:8000''')
-
+    print("    - \u001b[35mNew session started!\u001b[0m")
     settings = await cl.ChatSettings(
         [
             Select(
@@ -159,12 +149,12 @@ async def start():
             ),
             TextInput(
                 id="Chat Model",
-                label="Ollama Model",
+                label="Chat Model",
                 initial='dolphin-mistral'
             ),
             TextInput(
                 id="OpenAI Host",
-                label='OpenAI Host',
+                label='API Base',
                 initial='http://localhost:11434'
             ),
             TextInput(
@@ -196,9 +186,22 @@ async def start():
     ).send()
 
 
+print('''
+░▒▓███████▓▒░ ░▒▓██████▓▒░ ░▒▓██████▓▒░
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+░▒▓███████▓▒░░▒▓████████▓▒░▒▓█▓▒▒▓███▓▒░
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░
+
+
+Started!\n\n''')
+
+
 @cl.on_settings_update
 async def setup_agent(settings):
-    print("on_settings_update", settings)
+    print('    - Settings updated!')
 
 
 if __name__ == "__main__":
