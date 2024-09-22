@@ -1,7 +1,11 @@
+import PIL.Image
 from graphrag.query.cli import run_global_search, run_local_search
 
 from chainlit.input_widget import Select, TextInput
 import chainlit as cl
+
+from vllm import LLM
+from vllm.sampling_params import SamplingParams
 
 import os
 import json
@@ -131,6 +135,27 @@ async def main(message: cl.Message):
             )
             await cl.Message(content=res).send()
 
+        elif settings['Vision Model'] == 'Pixtral':
+            model_name = "mistralai/Pixtral-12B-2409"
+
+            sampling_params = SamplingParams(max_tokens=4192)
+
+            llm = LLM(model=model_name, tokenizer_mode="mistral")
+
+            prompt = message.content
+            image = Image.open(message.elements[0].path)
+
+            messages = [
+                {
+                    "role": "user",
+                    "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image}}]
+                },
+            ]
+
+            outputs = llm.chat(messages, sampling_params=sampling_params)
+
+            print(outputs[0].outputs[0].text)
+
 
 @cl.on_chat_start
 async def start():
@@ -148,8 +173,8 @@ async def start():
             Select(
                 id="Vision Model",
                 label="Vision Model",
-                values=["InternVL2", "Mini-CPM"],
-                initial_index=["InternVL2", "Mini-CPM"].index(default_settings['Vision Model']),
+                values=["InternVL2", "Mini-CPM", "Pixtral"],
+                initial_index=["InternVL2", "Mini-CPM", "Pixtral"].index(default_settings['Vision Model']),
             ),
             TextInput(
                 id="Provider",

@@ -12,3 +12,4 @@ openai~=1.36.0
 marker-pdf
 jmespath
 anthropic~=0.34.2
+vllm
