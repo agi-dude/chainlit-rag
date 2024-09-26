@@ -3,6 +3,13 @@ import os
 from typing import Union
 from fastapi import FastAPI
 from app import research_query
+from pydantic import BaseModel
+
+
+class SettingsChange(BaseModel):
+    key: str
+    value: str
+
 
 app = FastAPI()
 
@@ -24,12 +31,14 @@ def get_settings():
         return "File not found!"
 
 
-@app.post('/settings')
-def set_settings(key: Union[str, None] = None, value: Union[str, None] = None):
+@app.put('/settings')
+def set_settings(item: SettingsChange):
     with open('settings.json') as settings_file:
         settings = json.load(settings_file)
 
-    settings[key] = value
+    settings[item.key] = item.value
 
     with open('settings.json', 'w') as settings_file:
         json.dump(settings, settings_file)
+
+    return settings
