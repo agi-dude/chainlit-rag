@@ -13,3 +13,5 @@ marker-pdf
 jmespath
 anthropic~=0.34.2
 vllm
+fastapi~=0.110.3
+pydantic~=2.9.1
