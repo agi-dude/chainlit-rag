@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from app import research_query
 from pydantic import BaseModel
 
 from graphrag.query.cli import run_global_search, run_local_search
