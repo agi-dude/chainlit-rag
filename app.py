@@ -4,18 +4,18 @@ from graphrag.query.cli import run_global_search, run_local_search
 from chainlit.input_widget import Select, TextInput
 import chainlit as cl
 
-# from vllm import LLM
-# from vllm.sampling_params import SamplingParams
+from vllm import LLM
+from vllm.sampling_params import SamplingParams
 
 import os
 import json
 from llm import Client
 import chromadb
-#from lmdeploy import pipeline, TurbomindEngineConfig
-#from lmdeploy.vl import load_image
-#import torch
-#from PIL import Image
-#from transformers import AutoModel, AutoTokenizer
+from lmdeploy import pipeline, TurbomindEngineConfig
+from lmdeploy.vl import load_image
+import torch
+from PIL import Image
+from transformers import AutoModel, AutoTokenizer
 
 import prompts
 
